@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "OpenCLI Firefox Bridge",
+  "version": "1.0.24",
+  "description": "Browser automation bridge for the OpenCLI CLI tool. Runs page commands in your logged-in Firefox session via a local daemon.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "opencli-firefox@jackwener.github.io",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "permissions": [
+    "tabs",
+    "cookies",
+    "activeTab",
+    "alarms",
+    "storage",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.ts"]
+  },
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  },
+  "action": {
+    "default_title": "OpenCLI",
+    "default_popup": "action/index.html",
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "32": "images/icon-32.png"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "homepage_url": "https://github.com/jackwener/opencli"
+}

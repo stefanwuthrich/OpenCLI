@@ -1,0 +1,70 @@
+name: Build Firefox Extension
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "ext-firefox-v*" ]
+    paths:
+      - 'extension-firefox/**'
+      - '.github/workflows/build-extension-firefox.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'extension-firefox/**'
+      - '.github/workflows/build-extension-firefox.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: extension-firefox/package-lock.json
+
+      - name: Install extension dependencies
+        run: npm ci
+        working-directory: extension-firefox
+
+      - name: Typecheck extension
+        run: npm run typecheck
+        working-directory: extension-firefox
+
+      - name: Build extension (Firefox)
+        run: npm run build
+        working-directory: extension-firefox
+
+      - name: Prepare extension package
+        run: npm run package:release -- --out ../extension-firefox-package
+        working-directory: extension-firefox
+
+      - name: Create Extension ZIP
+        run: |
+          EXT_VERSION=$(node -p "require('./extension-firefox/package.json').version")
+          cd extension-firefox-package
+          zip -r ../opencli-extension-firefox-v${EXT_VERSION}.zip .
+
+      - name: Upload Artifacts (Action Run)
+        uses: actions/upload-artifact@v7
+        with:
+          name: opencli-extension-firefox-build
+          path: opencli-extension-firefox-v*.zip
+          retention-days: 7
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3.0.0
+        with:
+          files: opencli-extension-firefox-v*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

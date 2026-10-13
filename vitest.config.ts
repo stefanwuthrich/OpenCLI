@@ -23,6 +23,13 @@ export default defineConfig({
       },
       {
         test: {
+          name: 'extension-firefox',
+          include: ['extension-firefox/src/**/*.test.ts'],
+          sequence: { groupOrder: 0 },
+        },
+      },
+      {
+        test: {
           name: 'adapter',
           include: ['clis/**/*.test.{ts,js}'],
           sequence: { groupOrder: 1 },

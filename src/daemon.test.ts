@@ -8,13 +8,45 @@ import {
   buildExtensionDisconnectFailure,
   commandResultUnknownMessage,
   getResponseCorsHeaders,
+  isAllowedExtensionOrigin,
   resolveProfileRoute,
 } from './daemon-utils.js';
+
+describe('isAllowedExtensionOrigin', () => {
+  it('allows Chromium extension origins', () => {
+    expect(isAllowedExtensionOrigin('chrome-extension://abc123')).toBe(true);
+  });
+
+  it('allows Firefox extension origins', () => {
+    expect(isAllowedExtensionOrigin('moz-extension://2b1f0f0a-1111-2222-3333-444455556666')).toBe(true);
+  });
+
+  it('allows a missing Origin header (CLI/curl, no browser)', () => {
+    expect(isAllowedExtensionOrigin(undefined)).toBe(true);
+  });
+
+  it('rejects ordinary web origins', () => {
+    expect(isAllowedExtensionOrigin('https://example.com')).toBe(false);
+    expect(isAllowedExtensionOrigin('http://localhost:19825')).toBe(false);
+  });
+
+  it('rejects lookalike prefixes that are not extension origins', () => {
+    expect(isAllowedExtensionOrigin('chrome-extension.evil.com')).toBe(false);
+    expect(isAllowedExtensionOrigin('moz-extension.evil.com')).toBe(false);
+  });
+});
 
 describe('getResponseCorsHeaders', () => {
   it('allows the Browser Bridge extension origin to read /ping', () => {
     expect(getResponseCorsHeaders('/ping', 'chrome-extension://abc123')).toEqual({
       'Access-Control-Allow-Origin': 'chrome-extension://abc123',
+      Vary: 'Origin',
+    });
+  });
+
+  it('allows the Firefox Browser Bridge extension origin to read /ping', () => {
+    expect(getResponseCorsHeaders('/ping', 'moz-extension://2b1f0f0a-1111-2222-3333-444455556666')).toEqual({
+      'Access-Control-Allow-Origin': 'moz-extension://2b1f0f0a-1111-2222-3333-444455556666',
       Vary: 'Origin',
     });
   });

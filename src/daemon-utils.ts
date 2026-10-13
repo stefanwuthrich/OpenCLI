@@ -4,7 +4,27 @@ export const COMMAND_RESULT_UNKNOWN_HINT =
   'Inspect the browser/session state before retrying. Do not blindly retry write commands such as navigate, click, type, or eval.';
 
 export const PROFILE_DISCONNECTED_HINT =
-  'Open that Chrome profile and make sure the OpenCLI extension is enabled, or choose another profile with opencli profile use <name>.';
+  'Open that browser profile and make sure the OpenCLI extension is enabled, or choose another profile with opencli profile use <name>.';
+
+/**
+ * Origins a Browser Bridge extension can dial the daemon from. Chromium sends
+ * `chrome-extension://<id>`; Firefox sends `moz-extension://<uuid>`. Both are
+ * first-party extension origins — ordinary web pages never match either prefix
+ * because their Origin header carries an http(s) origin. Keeping this list in
+ * one place lets HTTP, WebSocket, and CORS checks agree.
+ */
+export const EXTENSION_ORIGIN_PREFIXES = ['chrome-extension://', 'moz-extension://'] as const;
+
+/**
+ * True when `origin` may talk to the daemon. A missing Origin header is a
+ * non-browser client (the CLI's own fetch, curl); it is allowed here because
+ * command endpoints still require the X-OpenCLI header, which a web page
+ * cannot send without a preflight the daemon refuses.
+ */
+export function isAllowedExtensionOrigin(origin?: string): boolean {
+  if (!origin) return true;
+  return EXTENSION_ORIGIN_PREFIXES.some((prefix) => origin.startsWith(prefix));
+}
 
 export type DaemonFailureContract = {
   message: string;
@@ -119,7 +139,7 @@ export function buildCommandDispatchFailure(contextId: string): DaemonFailureCon
 
 export function getResponseCorsHeaders(pathname: string, origin?: string): Record<string, string> | undefined {
   if (pathname !== '/ping') return undefined;
-  if (!origin || !origin.startsWith('chrome-extension://')) return undefined;
+  if (!origin || !isAllowedExtensionOrigin(origin)) return undefined;
   return {
     'Access-Control-Allow-Origin': origin,
     Vary: 'Origin',

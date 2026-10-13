@@ -1,0 +1,22 @@
+{
+  "name": "opencli-extension-firefox",
+  "version": "1.0.24",
+  "private": true,
+  "description": "OpenCLI Browser Bridge for Firefox — connects Firefox tabs to the local OpenCLI daemon.",
+  "opencli": {
+    "compatRange": ">=1.7.0"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "extension dev --browser=firefox",
+    "build": "extension build --browser=firefox",
+    "start": "extension start --browser=firefox",
+    "preview": "extension preview --browser=firefox",
+    "package:release": "node scripts/package-release.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "extension": "^4.1.31",
+    "typescript": "^5.7.0"
+  }
+}

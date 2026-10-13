@@ -17,6 +17,28 @@ OpenCLI connects to your browser through a lightweight **Browser Bridge** Chrome
 1. Open `chrome://extensions` and enable **Developer mode**.
 2. Click **Load unpacked** and select the `extension/` directory from the repository.
 
+### Firefox Build
+
+Firefox does not expose Chrome's `chrome.debugger`/CDP APIs, so it needs a
+separate build. See [`extension-firefox/`](https://github.com/jackwener/opencli/tree/main/extension-firefox)
+for the full feature matrix, but in short: `exec`/`eval`, `navigate`/`open`,
+`tab` operations, `bind`, `cookie`, viewport `screenshot`, input actions, and
+`wait download` work; `cdp`, network capture, frame-target operations, file
+uploads, and full-page screenshots are not available on Firefox.
+
+Build and load it with Extension.js:
+
+```bash
+cd extension-firefox
+npm install
+npm run build      # extension build --browser=firefox → dist/firefox/
+```
+
+Then in Firefox open `about:debugging#/runtime/this-firefox`, click
+**Load Temporary Add-on…**, and select `dist/firefox/manifest.json`. The Firefox
+extension connects to the same daemon as the Chrome bridge, so use
+`opencli --profile <name>` when both are connected.
+
 ## Verification
 
 That's it! The daemon auto-starts when you run any browser command. No tokens, no manual configuration.

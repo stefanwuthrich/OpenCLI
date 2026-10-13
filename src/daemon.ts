@@ -6,7 +6,8 @@
  *   Extension → WebSocket result → daemon → HTTP response → CLI
  *
  * Security (defense-in-depth against browser-based CSRF):
- *   1. Origin check — reject HTTP/WS from non chrome-extension:// origins
+ *   1. Origin check — reject HTTP/WS from non extension origins
+ *      (chrome-extension:// for Chromium, moz-extension:// for Firefox)
  *   2. Custom header — require X-OpenCLI header (browsers can't send it
  *      without CORS preflight, which we deny)
  *   3. No CORS headers on command endpoints — only /ping is readable from the
@@ -34,6 +35,7 @@ import {
   buildCommandTimeoutFailure,
   buildExtensionDisconnectFailure,
   getResponseCorsHeaders,
+  isAllowedExtensionOrigin,
   resolveProfileRoute,
 } from './daemon-utils.js';
 import {
@@ -248,10 +250,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
   // ─── Security: Origin & custom-header check ──────────────────────
   // Block browser-based CSRF: browsers always send an Origin header on
   // cross-origin requests.  Node.js CLI fetch does NOT send Origin, so
-  // legitimate CLI requests pass through.  Chrome Extension connects via
-  // WebSocket (which bypasses this HTTP handler entirely).
+  // legitimate CLI requests pass through.  Chromium and Firefox extensions
+  // connect via WebSocket (which bypasses this HTTP handler entirely) but may
+  // also probe /ping with a chrome-extension:// or moz-extension:// Origin.
   const origin = req.headers['origin'] as string | undefined;
-  if (origin && !origin.startsWith('chrome-extension://')) {
+  if (!isAllowedExtensionOrigin(origin)) {
     jsonResponse(res, 403, { ok: false, error: 'Forbidden: cross-origin request blocked' });
     return;
   }
@@ -500,10 +503,11 @@ const wss = new WebSocketServer({
   verifyClient: ({ req }: { req: IncomingMessage }) => {
     // Block browser-originated WebSocket connections.  Browsers don't
     // enforce CORS on WebSocket, so a malicious webpage could connect to
-    // ws://localhost:19825/ext and impersonate the Extension.  Real Chrome
-    // Extensions send origin chrome-extension://<id>.
+    // ws://localhost:19825/ext and impersonate the Extension.  Real extensions
+    // send origin chrome-extension://<id> (Chromium) or moz-extension://<uuid>
+    // (Firefox).
     const origin = req.headers['origin'] as string | undefined;
-    return !origin || origin.startsWith('chrome-extension://');
+    return isAllowedExtensionOrigin(origin);
   },
 });
 
